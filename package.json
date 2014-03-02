@@ -1,0 +1,28 @@
+{
+  "name": "webrtc-playground",
+  "version": "0.0.0",
+  "description": "WebRTC Playground",
+  "main": "server.js",
+  "scripts": {
+    "start": "node_modules/forever/bin/forever start index.js",
+    "stop": "node_modules/forever/bin/forever stopall",
+    "debug": "python -m http.server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/1000ch/webrtc-playground.git"
+  },
+  "keywords": [
+    "WebRTC"
+  ],
+  "author": "1000ch",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/1000ch/webrtc-playground/issues"
+  },
+  "homepage": "https://github.com/1000ch/webrtc-playground",
+  "dependencies": {
+    "websocket.io": "^0.2.1",
+    "forever": "^0.10.11"
+  }
+}

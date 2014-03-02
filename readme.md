@@ -1,5 +1,20 @@
 # WebRTC Playground
 
+## Debug
+
+Work in progress...
+
+```sh
+# run websocket server
+$ npm start
+
+# terminate websocket server
+$ npm stop
+
+# run web server
+$ npm run-script debug
+```
+
 ## Reference
 
 - [WebRTCに使われるP2Pの技術](http://tjun.org/blog/2013/12/webrtc_p2p/)

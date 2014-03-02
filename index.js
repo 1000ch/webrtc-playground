@@ -1,34 +1,35 @@
-var RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
-var RTCSessionDescription = window.RTCSessionDescription || window.webkitRTCSessionDescription || window.mozRTCSessionDescription;
-var URL = window.URL || window.webkitURL ||  window.mozURL;
-var peerConnection;
+var ws = require('websocket.io');
+var server = ws.listen(8124);
 
-document.addEventListener('DOMContentLoaded', function () {
-  var localVideo = document.querySelector('#js-local-video');
-  var remoteVideo = document.querySelector('#js-remote-video');
+var list = [];
 
-  var config = {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]};
-  peerConnection = new RTCPeerConnection(config);
+server.on('connection', function (socket) {
 
-  peerConnection.onicecandidate = function onIceCandidate(e) {
-    if (e.candidate) {
-      var message = {
-        type: 'candidate',
-        label: e.candidate.sdpMLineIndex,
-        id: e.candidate.sdpMid,
-        candidate: e.candidate.candidate
-      };
-      var jsonString = JSON.stringify(message);
-    } else {
-      console.log('End of candidates');
+  socket.on('message', function (data) {
+    var json = JSON.parse(data);
+    switch (json.type) {
+      case 0:
+        // register
+        if (list.indexOf(json.guid) === -1) {
+          list.push(json.guid);
+        }
+        json.list = list;
+        break;
+      case 1:
+        break;
+      case 2:
+        break;
+      default:
+        break;
     }
-  };
+    data = JSON.stringify(json);console.log(json);
+    server.clients.forEach(function (client) {
+      if (client) {
+        client.send(data);
+      }
+    });
+  });
 
-  peerConnection.onconnecting = function onConnecting(e) {};
-
-  peerConnection.onopen = function onOpen(e) {};
-
-  peerConnection.onaddstream = function onAddStream(e) {};
-
-  peerConnection.onremovestream = function onRemoveStream(e) {};
+  socket.on('close', function () {
+  });
 });
