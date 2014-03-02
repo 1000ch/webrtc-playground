@@ -16,7 +16,7 @@ var localId;
 var MessageType = {
   REGISTER: 0,
   SEND_OFFER: 1,
-  RESPOND_OFFER: 2,
+  ANSWER_OFFER: 2,
   SYNC_CANDIDATE: 3
 };
 
@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
   navigator.getUserMedia(
     {audio: false, video: true},
     function successCallback(stream) {
-      console.log(window.URL.createObjectURL(stream));
       // set stream to video element
       localVideo.src = window.URL.createObjectURL(stream);
       localVideo.play();
@@ -74,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   
   ws.onmessage = function onMessage(e) {
-    var message = JSON.parse(e.data);
+    var message = JSON.parse(e.data);console.log(message.type);
     switch (message.type) {
       case MessageType.REGISTER:
         var $select = $(guidSelect).empty();
@@ -91,43 +90,56 @@ document.addEventListener('DOMContentLoaded', function () {
       case MessageType.SEND_OFFER:
         // got offer
         var sdp = new RTCSessionDescription(message.sdp);
-          
-        // save sdp description as remote
-        peer.setRemoteDescription(sdp, function () {
-          // if type is offer
-          if (sdp.type === 'offer') {
-            
+
+        // if type is offer
+        if (sdp.type === 'offer') {     
+
+          // save sdp description as remote
+          peer.setRemoteDescription(sdp, function () {
+
             // create answer
             peer.createAnswer(function (sdp) {
+
               // save sdp as local
               peer.setLocalDescription(sdp, function () {
                 ws.send(JSON.stringify({
-                  type: MessageType.RESPOND_OFFER,
+                  type: MessageType.ANSWER_OFFER,
                   sdp: sdp,
                   to: localId
                 }));
               });
             });
-          }
-        });
+          });
+        }
         break;
+      case MessageType.ANSWER_OFFER:
+          // got answer
+          var sdp = new RTCSessionDescription(message.sdp);
+
+          // if type is offer
+          if (sdp.type === 'answer') {
+
+            // save sdp description as remote
+            peer.setRemoteDescription(sdp, function () {});
+          }
       case MessageType.SYNC_CANDIDATE:
-        var iceCandidate = new RTCIceCandidate({
-          candidate: message.candidate
-        });
-        peer.addIceCandidate(iceCandidate);
+        if (message.candidate) {
+          var iceCandidate = new RTCIceCandidate(message.candidate);
+          peer.addIceCandidate(iceCandidate);
+        }
       default:
         break;
     }
   };
 
   peer.onicecandidate = function onIceCandidate(e) {
-    if (e.candidate) {
-      ws.send(JSON.stringify({
-        type: MessageType.SYNC_CANDIDATE,
-        candidate: e.candidate.candidate
-      }));
+    if (!e.candidate) {
+      return;
     }
+    ws.send(JSON.stringify({
+      type: MessageType.SYNC_CANDIDATE,
+      candidate: e.candidate
+    }));
   };
 
   peer.onconnecting = function onConnecting(e) {
