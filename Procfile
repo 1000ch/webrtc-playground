@@ -1,1 +1,1 @@
-web: node_modules/forever/bin/forever start index.js
+web: node_modules/forever/bin/forever -c 'node --harmony' start index.js
