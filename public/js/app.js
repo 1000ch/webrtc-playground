@@ -1,7 +1,7 @@
-
 // fix vendor prefixed modules
 window.RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
 window.RTCSessionDescription = window.RTCSessionDescription || window.webkitRTCSessionDescription || window.mozRTCSessionDescription;
+window.RTCIceCandidate = window.RTCIceCandidate || window.webkitRTCIceCandidate || window.mozRTCIceCandidate;
 window.URL = window.URL || window.webkitURL ||  window.mozURL;
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
@@ -66,14 +66,16 @@ document.addEventListener('DOMContentLoaded', function () {
         ws.send(JSON.stringify({
           type: MessageType.SEND_OFFER,
           sdp: sdp,
-          to: guidSelect.options[guidSelect.selectedIndex].value
+          guid: guidSelect.options[guidSelect.selectedIndex].value
         }));
       });
+    }, function (error) {
+      console.log(error);
     });
   });
   
   ws.onmessage = function onMessage(e) {
-    var message = JSON.parse(e.data);console.log(message.type);
+    var message = JSON.parse(e.data);
     switch (message.type) {
       case MessageType.REGISTER:
         var $select = $(guidSelect).empty();
@@ -88,6 +90,11 @@ document.addEventListener('DOMContentLoaded', function () {
         $select.append(options);
         break;
       case MessageType.SEND_OFFER:
+        // if target guid is not local guid
+        if (message.guid !== localId) {
+          break;
+        }
+
         // got offer
         var sdp = new RTCSessionDescription(message.sdp);
 
@@ -105,23 +112,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 ws.send(JSON.stringify({
                   type: MessageType.ANSWER_OFFER,
                   sdp: sdp,
-                  to: localId
+                  guid: localId
                 }));
               });
+            }, function (error) {
+              console.log(error);
             });
           });
         }
         break;
       case MessageType.ANSWER_OFFER:
-          // got answer
-          var sdp = new RTCSessionDescription(message.sdp);
+        // got answer
+        var sdp = new RTCSessionDescription(message.sdp);
 
-          // if type is offer
-          if (sdp.type === 'answer') {
+        // if type is offer
+        if (sdp.type === 'answer') {
 
-            // save sdp description as remote
-            peer.setRemoteDescription(sdp, function () {});
-          }
+          // save sdp description as remote
+          peer.setRemoteDescription(sdp, function () {});
+        }
       case MessageType.SYNC_CANDIDATE:
         if (message.candidate) {
           var iceCandidate = new RTCIceCandidate(message.candidate);
