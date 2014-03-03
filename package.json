@@ -4,10 +4,10 @@
   "description": "WebRTC Playground",
   "main": "index.js",
   "engines": {
-    "node": "^0.10"
+    "node": "^0.11.9"
   },
   "scripts": {
-    "start": "node_modules/forever/bin/forever start index.js",
+    "start": "node_modules/forever/bin/forever -c 'node --harmony' start index.js",
     "stop": "node_modules/forever/bin/forever stopall"
   },
   "repository": {
@@ -27,6 +27,10 @@
     "websocket.io": "^0.2.1",
     "forever": "^0.10.11",
     "express": "~3.4.8",
-    "jade": "~1.3.0"
+    "jade": "~1.3.0",
+    "koa-logger": "~1.2.0",
+    "koa-route": "~1.0.2",
+    "co-views": "~0.2.0",
+    "koa": "~0.5.0"
   }
 }

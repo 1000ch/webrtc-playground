@@ -1,21 +1,34 @@
-// web server
-var express = require('express');
-var app = express();
+var path = require('path');
+var fs = require('fs');
 
-// set up
-app.use(app.router);
-app.use(express.static(__dirname + '/public'));
-app.use(express.errorHandler());
-app.set('views', __dirname + '/views');
-app.set('view engine', 'jade');
+// koa modules
+var koa = require('koa');
+var logger = require('koa-logger');
+var route = require('koa-route');
+var views = require('co-views');
+var app = koa();
 
-// route
-app.get('/', function (request, response) {
-  response.render('index');
+const STATIC = '/public';
+
+var render = views(__dirname + '/views', {
+  ext: 'jade'
 });
 
-// listen
-app.listen(3000);
+app.use(logger())
+app.use(route.get('/', index));
+app.use(route.get('/css/*', publicStream));
+app.use(route.get('/js/*', publicStream));
+app.listen(4000);
+
+function *index() {
+  this.body = yield render('index');
+}
+
+function *publicStream() {
+  var p = __dirname + STATIC + this.path;
+  this.type = path.extname(p);
+  this.body = fs.createReadStream(p);
+}
 
 // web socket
 var ws = require('websocket.io');
@@ -38,7 +51,7 @@ server.on('connection', function (socket) {
       default:
         break;
     }
-    data = JSON.stringify(json);console.log(json);
+    data = JSON.stringify(json);
     server.clients.forEach(function (client) {
       if (client) {
         client.send(data);
