@@ -1,0 +1,25 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    title WebRTC Playground
+    link(rel='stylesheet', href='//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css')
+  body
+    div.container
+      div.row
+        div.col-xs-12
+          input.form-control#js-local-guid(type='text')
+      div.row
+        div.col-xs-12
+          video#js-local-video(width='640px', height='320px')
+      div.row
+        div.col-xs-10
+          select.form-control#js-guid-list
+        div.col-xs-2
+          button.btn.btn-primary#js-connect Connect
+      div.row
+        div.col-xs-12
+          video#js-remote-video(width='640px', height='320px')
+    script(src='//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js')
+    script(src='js/guid.js')
+    script(src='js/app.js')

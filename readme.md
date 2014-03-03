@@ -5,14 +5,11 @@
 Work in progress...
 
 ```sh
-# run websocket server
+# run server
 $ npm start
 
-# terminate websocket server
+# terminate server
 $ npm stop
-
-# run web server
-$ npm run-script debug
 ```
 
 ## Reference

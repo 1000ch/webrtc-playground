@@ -1,10 +1,28 @@
+// web server
+var express = require('express');
+var app = express();
+
+// set up
+app.use(app.router);
+app.use(express.static(__dirname + '/public'));
+app.use(express.errorHandler());
+app.set('views', __dirname + '/views');
+app.set('view engine', 'jade');
+
+// route
+app.get('/', function (request, response) {
+  response.render('index');
+});
+
+// listen
+app.listen(3000);
+
+// web socket
 var ws = require('websocket.io');
 var server = ws.listen(8124);
-
 var list = [];
 
 server.on('connection', function (socket) {
-
   socket.on('message', function (data) {
     var json = JSON.parse(data);
     switch (json.type) {
@@ -16,9 +34,7 @@ server.on('connection', function (socket) {
         json.list = list;
         break;
       case 1:
-        break;
       case 2:
-        break;
       default:
         break;
     }
@@ -28,8 +44,5 @@ server.on('connection', function (socket) {
         client.send(data);
       }
     });
-  });
-
-  socket.on('close', function () {
   });
 });

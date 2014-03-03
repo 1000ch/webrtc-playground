@@ -2,11 +2,13 @@
   "name": "webrtc-playground",
   "version": "0.0.0",
   "description": "WebRTC Playground",
-  "main": "server.js",
+  "main": "index.js",
+  "engines": {
+    "node": "^0.10"
+  },
   "scripts": {
     "start": "node_modules/forever/bin/forever start index.js",
-    "stop": "node_modules/forever/bin/forever stopall",
-    "debug": "python -m http.server"
+    "stop": "node_modules/forever/bin/forever stopall"
   },
   "repository": {
     "type": "git",
@@ -23,6 +25,8 @@
   "homepage": "https://github.com/1000ch/webrtc-playground",
   "dependencies": {
     "websocket.io": "^0.2.1",
-    "forever": "^0.10.11"
+    "forever": "^0.10.11",
+    "express": "~3.4.8",
+    "jade": "~1.3.0"
   }
 }
