@@ -33,25 +33,17 @@ function *publicStream() {
 // web socket
 var ws = require('websocket.io');
 var server = ws.listen(8124);
-var list = [];
+var clients = {};
 
 server.on('connection', function (socket) {
   socket.on('message', function (data) {
+
     var json = JSON.parse(data);
-    switch (json.type) {
-      case 0:
-        // register
-        if (list.indexOf(json.guid) === -1) {
-          list.push(json.guid);
-        }
-        json.list = list;
-        break;
-      case 1:
-      case 2:
-      default:
-        break;
-    }
+    clients[json.from] = json.username || 'Anonymous';
+
+    json.clients = clients;
     data = JSON.stringify(json);
+
     server.clients.forEach(function (client) {
       if (client) {
         client.send(data);

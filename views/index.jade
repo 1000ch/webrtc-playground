@@ -11,15 +11,15 @@ html
           input.form-control#js-local-guid(type='text')
       div.row
         div.col-xs-8
-          video#js-local-video(width='640px', height='320px')
+          video#js-local-video(width='640px', height='320px', autoplay)
       div.row
         div.col-xs-6
-          select.form-control#js-guid-list
+          select.form-control#js-clients
         div.col-xs-2
           button.btn.btn-primary#js-connect Connect
       div.row
         div.col-xs-8
-          video#js-remote-video(width='640px', height='320px')
+          video#js-remote-video(width='640px', height='320px', autoplay)
     script(src='//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js')
     script(src='js/guid.js')
     script(src='js/app.js')

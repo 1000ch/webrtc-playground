@@ -5,38 +5,27 @@ window.RTCIceCandidate = window.RTCIceCandidate || window.webkitRTCIceCandidate 
 window.URL = window.URL || window.webkitURL ||  window.mozURL;
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
-// constant values
-var SOCKET_URL = 'ws://127.0.0.1:8124/';
-
-// variables
-var peer;
-var ws;
-var localId;
-
-var MessageType = {
-  REGISTER: 0,
-  SEND_OFFER: 1,
-  ANSWER_OFFER: 2,
-  SYNC_CANDIDATE: 3
-};
+var peer = new RTCPeerConnection({
+  "iceServers": [{
+    "url": "stun:stun.l.google.com:19302"
+  }]
+});
+var ws = new WebSocket('ws://127.0.0.1:8124/');
+var localGUID;
+var remoteGUID;
 
 document.addEventListener('DOMContentLoaded', function () {
-  var localGuid = document.querySelector('#js-local-guid');
-  var localVideo = document.querySelector('#js-local-video');
-  var remoteVideo = document.querySelector('#js-remote-video');
-  var guidSelect = document.querySelector('#js-guid-list');
-  var connectButton = document.querySelector('#js-connect');
+  var $localGuid = $('#js-local-guid');
+  var $clients = $('#js-clients');
+  var $connect = $('#js-connect');
 
-  var config = {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]};
-  peer = new RTCPeerConnection(config);
-  ws = new WebSocket(SOCKET_URL);
+  navigator.getUserMedia({
+      audio: false, video: true
+    }, function successCallback(stream) {
 
-  navigator.getUserMedia(
-    {audio: false, video: true},
-    function successCallback(stream) {
       // set stream to video element
-      localVideo.src = window.URL.createObjectURL(stream);
-      localVideo.play();
+      var local = document.querySelector('#js-local-video');
+      local.src = window.URL.createObjectURL(stream);
 
       // add stream to peer
       peer.addStream(stream);
@@ -47,26 +36,32 @@ document.addEventListener('DOMContentLoaded', function () {
   );
   
   ws.onopen = function () {
-    localId = GUID();
-    $(localGuid).val(localId).attr('disabled', 'disabled');
+
+    localGUID = guid();
+    $localGuid.val(localGUID).attr('disabled', 'disabled');
     ws.send(JSON.stringify({
-      type: MessageType.REGISTER,
-      guid: localId
+      from: localGUID
     }));
   };
 
-  $(connectButton).on('click', function () {
-    if (!guidSelect.value) {
-      alert('GUID:' + guidSelect.value);
-    };
+  $connect.on('click', function () {
+
+    if (!$clients.val()) {
+      alert('GUID:' + $clients.val());
+    } else {
+      remoteGUID = $clients.val();
+    }
+
     peer.createOffer(function (sdp) {
+
       // set sdp description as local
       peer.setLocalDescription(sdp, function () {
+
         // send sdp to selected target
         ws.send(JSON.stringify({
-          type: MessageType.SEND_OFFER,
           sdp: sdp,
-          guid: guidSelect.options[guidSelect.selectedIndex].value
+          to: remoteGUID,
+          from: localGUID
         }));
       });
     }, function (error) {
@@ -75,79 +70,72 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   
   ws.onmessage = function onMessage(e) {
-    var message = JSON.parse(e.data);
-    switch (message.type) {
-      case MessageType.REGISTER:
-        var $select = $(guidSelect).empty();
-        var options = [];
-        message.list.filter(function (guid) {
-          return (guid !== localId);
-        }).forEach(function (guid) {
-          var option = document.createElement('option');
-          option.textContent = option.value = guid;
-          options.push(option);
-        });
-        $select.append(options);
-        break;
-      case MessageType.SEND_OFFER:
-        // if target guid is not local guid
-        if (message.guid !== localId) {
-          break;
-        }
 
-        // got offer
-        var sdp = new RTCSessionDescription(message.sdp);
+    // parse json data
+    var data = JSON.parse(e.data);
 
-        // if type is offer
-        if (sdp.type === 'offer') {     
+    var options = [];
+    data.clients.filter(function (guid) {
+      return (guid !== localGUID);
+    }).forEach(function (guid) {
+      var option = document.createElement('option');
+      option.textContent = option.value = guid;
+      options.push(option);
+    });
+    $clients.empty().append(options);
 
-          // save sdp description as remote
-          peer.setRemoteDescription(sdp, function () {
+    // if target guid is not local guid
+    if (data.to !== localGUID) {
+      return;
+    }
 
-            // create answer
-            peer.createAnswer(function (sdp) {
+    // got offer
+    var sdp = new RTCSessionDescription(data.sdp);
 
-              // save sdp as local
-              peer.setLocalDescription(sdp, function () {
-                ws.send(JSON.stringify({
-                  type: MessageType.ANSWER_OFFER,
-                  sdp: sdp,
-                  guid: localId
-                }));
-              });
-            }, function (error) {
-              console.log(error);
-            });
+    // if type is offer
+    if (sdp.type === 'offer') {
+
+      // save sdp description as remote
+      peer.setRemoteDescription(sdp, function () {
+
+        // create answer
+        peer.createAnswer(function (sdp) {
+
+          // save sdp as local
+          peer.setLocalDescription(sdp, function () {
+            ws.send(JSON.stringify({
+              type: MessageType.ANSWER_OFFER,
+              sdp: sdp,
+              from: localGUID,
+              to: remoteGUID
+            }));
           });
-        }
-        break;
-      case MessageType.ANSWER_OFFER:
-        // got answer
-        var sdp = new RTCSessionDescription(message.sdp);
+        }, function (error) {
+          console.log(error);
+        });
+      });
+    } else if (sdp.type === 'answer') {
 
-        // if type is offer
-        if (sdp.type === 'answer') {
+      // save sdp description as remote
+      peer.setRemoteDescription(sdp, function () {});
+    }
 
-          // save sdp description as remote
-          peer.setRemoteDescription(sdp, function () {});
-        }
-      case MessageType.SYNC_CANDIDATE:
-        if (message.candidate) {
-          var iceCandidate = new RTCIceCandidate(message.candidate);
-          peer.addIceCandidate(iceCandidate);
-        }
-      default:
-        break;
+    if (data.candidate) {
+      var iceCandidate = new RTCIceCandidate(data.candidate);
+      peer.addIceCandidate(iceCandidate);
     }
   };
 
   peer.onicecandidate = function onIceCandidate(e) {
+
     if (!e.candidate) {
       return;
     }
+
     ws.send(JSON.stringify({
-      type: MessageType.SYNC_CANDIDATE,
-      candidate: e.candidate
+      candidate: e.candidate,
+      from: localGUID,
+      to: remoteGUID
     }));
   };
 
@@ -160,12 +148,13 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   peer.onaddstream = function onAddStream(e) {
-    remoteVideo.src = window.URL.createObjectURL(e.stream);
-    remoteVideo.play();
+    var remote = document.querySelector('#js-remote-video')
+    remote.src = window.URL.createObjectURL(e.stream);
   };
 
   peer.onremovestream = function onRemoveStream(e) {
-    remoteVideo.pause();
-    remoteVideo.src = null;
+    var remote = document.querySelector('#js-remote-video');
+    remote.pause();
+    remote.src = null;
   };
 });
